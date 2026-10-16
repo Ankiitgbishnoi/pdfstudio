@@ -45,10 +45,11 @@ const renderDialog = (props: {
   onPrint?: (settings: PrintSettings) => void;
 }) => {
   const onPrint = props.onPrint ?? vi.fn();
+  const onClose = vi.fn();
   const dialog = (open: boolean) => (
     <PrintDialog
       open={open}
-      onClose={vi.fn()}
+      onClose={onClose}
       onPrint={onPrint}
       fileName={props.fileName}
       systemPrintDialog={props.systemPrintDialog}
@@ -71,7 +72,7 @@ const renderDialog = (props: {
   const result = render(tree(props.open ?? true));
   // The viewer keeps the dialog mounted between opens, so a test can too.
   const setOpen = (open: boolean) => result.rerender(tree(open));
-  return { onPrint, setOpen, ...result };
+  return { onPrint, onClose, setOpen, ...result };
 };
 
 const confirm = () =>
@@ -380,6 +381,18 @@ describe("PrintDialog", () => {
     fireEvent.click(screen.getByLabelText("viewer.print.nextSide"));
 
     expect(badges(document.body)).toEqual(["4", "9"]);
+  });
+
+  it("closes only the enlarged preview when Escape is pressed in it", () => {
+    const { onClose } = renderDialog({ pageCount: 12 });
+
+    fireEvent.click(screen.getByLabelText("viewer.print.enlargePreview"));
+    expect(document.querySelector(".print-preview--enlarged")).toBeTruthy();
+
+    fireEvent.keyDown(document.body, { key: "Escape" });
+
+    expect(document.querySelector(".print-preview--enlarged")).toBeNull();
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it("enlarges the preview without offering to enlarge itself", () => {

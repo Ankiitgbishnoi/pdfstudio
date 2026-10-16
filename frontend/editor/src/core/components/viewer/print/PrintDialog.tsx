@@ -39,6 +39,7 @@ import {
   POSTER_PAGE_SIZES,
   PRINT_PRESETS,
   bookletPass,
+  bookletSideIndex,
   bookletSides,
   defaultPrintSettings,
   pagesPerSheet,
@@ -875,7 +876,9 @@ export function PrintDialog({
   // The figure shows one output side or one document page, and the reader can
   // step through them: a job whose last side is half full is worth checking, and
   // every page of a booklet is otherwise hidden behind the selection.
-  const perSheet = pagesPerSheet(layout);
+  // A cleared grid field reads as zero, which would divide the side count into
+  // Infinity and put it in the pager; the settings are refused anyway.
+  const perSheet = Math.max(1, pagesPerSheet(layout));
   const sides = Math.max(1, Math.ceil(pageCount / perSheet));
   const bookletSheet = useMemo(
     () => bookletSides(pageCount, settings.booklet.spineLocation),
@@ -899,10 +902,13 @@ export function PrintDialog({
         )
       : settings.preset === "standard"
         ? Math.max(1, selected.indexOf(currentPage) + 1)
-        : Math.min(
-            steps,
-            Math.max(1, 2 * Math.ceil(Math.max(currentPage, 1) / 2) - 1),
-          );
+        : settings.preset === "booklet"
+          ? bookletSideIndex(
+              pageCount,
+              settings.booklet.spineLocation,
+              Math.max(currentPage, 1),
+            )
+          : 1;
   const [step, setStep] = useState(0);
   const shownStep = step === 0 ? autoStep : Math.min(step, steps);
 
@@ -1373,10 +1379,13 @@ export function PrintDialog({
     </>
   );
 
+  // The enlarged preview is a modal of its own: while it is open Escape belongs
+  // to it, so this dialog must not read the same key as its own close.
   return (
     <Modal
       open={open}
       onClose={onClose}
+      disableEscapeClose={enlarged}
       title={t("viewer.print.title")}
       width={settings.preset === "standard" ? "md" : "lg"}
       ariaLabel={t("viewer.print.title")}

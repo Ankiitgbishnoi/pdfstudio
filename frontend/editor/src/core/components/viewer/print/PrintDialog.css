@@ -293,7 +293,7 @@
 .print-tiles__paper {
   display: block;
   width: 100%;
-  aspect-ratio: 1 / 1.41;
+  aspect-ratio: 210 / 297;
 }
 
 .print-tiles__page {
