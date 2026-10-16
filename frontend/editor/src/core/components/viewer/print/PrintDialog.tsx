@@ -973,7 +973,7 @@ export function PrintDialog({
             : [previewPage];
   const { pageImage, pageState, retry } = usePrintPreviewImages(
     open ? previewPages : NO_PREVIEW_PAGES,
-    open,
+    pageCount,
   );
   // An uncountable or unprintable job has no result to state, and a count from
   // settings that do not validate would contradict the error beside the fields.
