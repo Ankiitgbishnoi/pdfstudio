@@ -118,4 +118,56 @@ describe("printPdfBlob", () => {
     await vi.advanceTimersByTimeAsync(15_000);
     await Promise.all([firstSettled, secondSettled]);
   });
+
+  it("releases the frame when the document fails to load", async () => {
+    const printed = printPdfBlob(new Blob(["%PDF"]), "job.pdf");
+    const frame = frames()[0];
+    const rejected = expect(printed).rejects.toThrow(
+      "Failed to load the print frame",
+    );
+
+    frame.dispatchEvent(new Event("error"));
+
+    await rejected;
+    expect(frames()).toHaveLength(0);
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:print-1");
+  });
+
+  it("leaves a newer job's frame alone when an older job is cancelled", async () => {
+    const olderSignal = new AbortController();
+    const newerSignal = new AbortController();
+    const older = printPdfBlob(
+      new Blob(["%PDF"]),
+      "one.pdf",
+      olderSignal.signal,
+    );
+    const rejected = expect(older).rejects.toMatchObject({
+      name: "AbortError",
+    });
+
+    // Starting a print supersedes the one before it: the module owns one frame,
+    // and the cancelled job's cleanup must not reach past its own.
+    const newer = printPdfBlob(
+      new Blob(["%PDF"]),
+      "two.pdf",
+      newerSignal.signal,
+    );
+    const frame = frames()[0];
+    const contentWindow = stubContentWindow(frame);
+
+    olderSignal.abort();
+    await rejected;
+
+    expect(frames()).toHaveLength(1);
+    expect(frame.isConnected).toBe(true);
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:print-1");
+    // The cancelled job released its own URL; the newer job's bytes stay.
+    expect(URL.revokeObjectURL).not.toHaveBeenCalledWith("blob:print-2");
+
+    frame.dispatchEvent(new Event("load"));
+
+    await expect(newer).resolves.toBeUndefined();
+    expect(contentWindow.print).toHaveBeenCalledTimes(1);
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:print-2");
+  });
 });
