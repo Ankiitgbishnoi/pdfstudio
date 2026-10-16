@@ -40,6 +40,9 @@ import {
   useNavigationState,
 } from "@app/contexts/NavigationContext";
 import { useSignature } from "@app/contexts/SignatureContext";
+import { useToolWorkflow } from "@app/contexts/ToolWorkflowContext";
+import { useEventCallback } from "@app/hooks/useEventCallback";
+import { useDocumentEditSession } from "@app/contexts/documentEdit/DocumentEditSessionContext";
 import { useRedaction } from "@app/contexts/RedactionContext";
 import type { RedactionPendingTrackerAPI } from "@app/components/viewer/RedactionPendingTracker";
 import type {
@@ -501,7 +504,11 @@ const EmbedPdfViewerContent = ({
     setRedactionsApplied,
     deactivateRedact,
     setRedactionMode,
+    isRedactionMode,
   } = useRedaction();
+
+  const { handleToolSelectForced } = useToolWorkflow();
+  const { workingRevision } = useDocumentEditSession();
 
   // Resubscribing to history emits its current state as though an edit occurred.
   const redactionsAppliedRef = useRef(redactionsApplied);
@@ -1023,6 +1030,34 @@ const EmbedPdfViewerContent = ({
       }
     };
   }, [historyApiRef.current, setHasUnsavedChanges, redactionTrackerRef]);
+
+  // A dirty annotation surfaces the Annotate panel, which carries the save
+  // action. Keyed on the edit revision rather than the dirty flag: the flag stays
+  // set after a cancel, so it would only ever fire for the first edit. The latch
+  // stops the tool being re-selected while the panel is already open, and clears
+  // once the user leaves it, so a later edit surfaces it again.
+  const annotationUiOpenedRef = useRef(false);
+  useEffect(() => {
+    if (selectedTool !== "annotate") annotationUiOpenedRef.current = false;
+  }, [selectedTool]);
+
+  const openAnnotationUi = useEventCallback(() => {
+    if (
+      annotationUiOpenedRef.current ||
+      previewFile ||
+      isInAnnotationTool ||
+      isManualRedactMode ||
+      isRedactionMode
+    ) {
+      return;
+    }
+    annotationUiOpenedRef.current = true;
+    handleToolSelectForced("annotate");
+  });
+
+  useEffect(() => {
+    if (workingRevision > 0) openAnnotationUi();
+  }, [workingRevision, openAnnotationUi]);
 
   // Register checker for unsaved changes (annotations only for now)
   useEffect(() => {
