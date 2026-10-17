@@ -5,6 +5,7 @@
 from flask import Flask, jsonify
 
 app = Flask(__name__)
+application = app  # expose both names to be safe for Vercel detection
 
 @app.route("/")
 def index():
