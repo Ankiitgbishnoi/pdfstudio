@@ -135,8 +135,8 @@ subprojects {
         implementation 'io.github.pixee:java-security-toolkit:1.2.2'
 
         //tmp for security bumps
-        implementation 'ch.qos.logback:logback-core:1.5.18'
-        implementation 'ch.qos.logback:logback-classic:1.5.18'
+        implementation 'ch.qos.logback:logback-core:1.6.5'
+        implementation 'ch.qos.logback:logback-classic:1.6.5'
         compileOnly "org.projectlombok:lombok:$lombokVersion"
         annotationProcessor "org.projectlombok:lombok:$lombokVersion"
 
