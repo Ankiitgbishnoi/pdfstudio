@@ -1,3 +1,14 @@
 # pdfstudio
 
 A lightweight PDF editing tool.
+
+node_modules/
+dist/
+build/
+.env
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
