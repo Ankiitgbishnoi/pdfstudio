@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pdfstudio"
+version = "0.1.0"
+description = "Small PDF editing CLI for merge, split, rotate, extract, and watermark operations"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Ankiitgbishnoi", email = "ankiitgbishnoi@example.com" }]
+dependencies = [
+  "pypdf>=3.0.0",
+  "reportlab>=4.0.0",
+]
+
+[project.scripts]
+pdf-studio = "pdfstudio.cli:main"
